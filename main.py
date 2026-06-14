@@ -111,29 +111,57 @@ def compare_goals(
             filtered_results.append(goal_analysis)
             
     # Sort by the new overall masterclass rating!
-    filtered_results = sorted(filtered_results, key=lambda x: x["overall_masterclass_rating"], reverse=True)
-
    # --------------------------------------------------
-    # NEW BEAUTIFUL REPORT FORMAT
+    # VISUAL HTML RESPONSE CARD
     # --------------------------------------------------
     if not filtered_results:
-        return PlainTextResponse("🔍 No world cup goals matched your filtering criteria.")
+        return HTMLResponse("🚨 <span style='color: #ff6b6b; font-family: sans-serif;'>No historic World Cup matches matched your filter criteria.</span>")
 
-    # Grab the highest-rated masterclass performance from your sorted list
-    top_performance = filtered_results[0]  
+    # Get the number one rated masterclass match
+    top = filtered_results[0]
 
-    report = f"""
-🏆 WORLD CUP MASTERCLASS ANALYTICS REPORT 🏆
---------------------------------------------------
-🕒 Goal Minute: {top_performance.get('minute')}'
-📈 Era Avg Goals/Game: {top_performance.get('era_avg_goals_per_game', 'N/A')}
-
-📊 UNIQUE METRIC BREAKDOWN:
-• Clutch Index: {top_performance.get('clutch_index')} / 5.0
-• Possession Defiance: {top_performance.get('possession_defiance_score')} / 10.0
-
-🔥 OVERALL MASTERCLASS RATING: {top_performance.get('overall_masterclass_rating')} / 10.0
---------------------------------------------------
-Status: Engine Online & Fully Calculated.
-"""
-    return PlainTextResponse(report)
+    html_content = f"""
+    <html>
+        <head>
+            <style>
+                .card {{
+                    font-family: 'Segoe UI', Roboto, sans-serif;
+                    background: #1a1c23;
+                    color: #ffffff;
+                    border-radius: 12px;
+                    padding: 24px;
+                    border: 1px solid #2d3139;
+                    max-width: 450px;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                }}
+                .title {{ color: #00fff0; font-size: 20px; font-weight: bold; margin-bottom: 15px; border-bottom: 2px solid #2d3139; padding-bottom: 8px; }}
+                .player-header {{ font-size: 18px; color: #ffb800; margin-bottom: 10px; }}
+                .stat-row {{ display: flex; justify-content: space-between; margin: 8px 0; font-size: 15px; color: #a0aec0; }}
+                .stat-val {{ color: #ffffff; font-weight: bold; }}
+                .rating-box {{ background: #2d3748; padding: 12px; border-radius: 8px; text-align: center; margin-top: 15px; }}
+                .rating-num {{ font-size: 32px; color: #00ff66; font-weight: bold; }}
+            </style>
+        </head>
+        <body>
+            <div class="card">
+                <div class="title">🏆 WORLD CUP ANALYTICS ENGINE</div>
+                <div class="player-header">👤 {top.get('player', 'Unknown')} ({top.get('year', 'N/A')})</div>
+                
+                <div class="stat-row"><span>🎯 Match Stage:</span><span class="stat-val">{top.get('stage', 'N/A')}</span></div>
+                <div class="stat-row"><span>🥊 Opponent:</span><span class="stat-val">{top.get('opponent', 'N/A')}</span></div>
+                <div class="stat-row"><span>🕒 Goal Minute:</span><span class="stat-val">{top.get('minute')}' min</span></div>
+                <div class="stat-row"><span>📈 Era Avg Goals/Game:</span><span class="stat-val">{top.get('era_avg_goals_per_game', 'N/A')}</span></div>
+                <div class="stat-row"><span>⚽ Team Possession:</span><span class="stat-val">{top.get('team_possession_pct')}%</span></div>
+                
+                <div class="rating-box">
+                    <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #cbd5e0;">Overall Masterclass Rating</div>
+                    <div class="rating-num">{top.get('overall_masterclass_rating')} / 10.0</div>
+                    <div style="font-size: 13px; color: #a0aec0; margin-top: 5px;">
+                        ⚡ Clutch: {top.get('calculated_clutch_index')} | 🧩 Defiance: {top.get('possession_defiance_score')}
+                    </div>
+                </div>
+            </div>
+        </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content, status_code=200)
