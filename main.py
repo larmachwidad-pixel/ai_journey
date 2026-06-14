@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, PlainTextResponse
 from pydantic import BaseModel
 from typing import Optional
 import os
@@ -113,11 +113,27 @@ def compare_goals(
     # Sort by the new overall masterclass rating!
     filtered_results = sorted(filtered_results, key=lambda x: x["overall_masterclass_rating"], reverse=True)
 
-    return {
-        "filters_applied": {
-            "min_minute": min_minute,
-            "max_possession_allowed": max_possession
-        },
-        "total_matches_found": len(filtered_results),
-        "comparison_matrix": filtered_results
-    }
+   # --------------------------------------------------
+    # NEW BEAUTIFUL REPORT FORMAT
+    # --------------------------------------------------
+    if not filtered_results:
+        return PlainTextResponse("🔍 No world cup goals matched your filtering criteria.")
+
+    # Grab the highest-rated masterclass performance from your sorted list
+    top_performance = filtered_results[0]  
+
+    report = f"""
+🏆 WORLD CUP MASTERCLASS ANALYTICS REPORT 🏆
+--------------------------------------------------
+🕒 Goal Minute: {top_performance.get('minute')}'
+📈 Era Avg Goals/Game: {top_performance.get('era_avg_goals_per_game', 'N/A')}
+
+📊 UNIQUE METRIC BREAKDOWN:
+• Clutch Index: {top_performance.get('clutch_index')} / 5.0
+• Possession Defiance: {top_performance.get('possession_defiance_score')} / 10.0
+
+🔥 OVERALL MASTERCLASS RATING: {top_performance.get('overall_masterclass_rating')} / 10.0
+--------------------------------------------------
+Status: Engine Online & Fully Calculated.
+"""
+    return PlainTextResponse(report)
