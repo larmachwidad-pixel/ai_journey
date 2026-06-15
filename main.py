@@ -1,4 +1,5 @@
-from fastapi import FastAPI, PlainTextResponse
+from fastapi import FastAPI
+from fastapi.responses import PlainTextResponse  #  This is the correct path
 from pydantic import BaseModel
 from typing import Optional
 import os
