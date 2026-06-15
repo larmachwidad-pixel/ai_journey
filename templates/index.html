@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>World Cup Analytics Engine</title>
+    <style>
+      :root {
+        --bg-color: #0f172a;
+        --card-bg: #1e293b;
+        --accent: #38bdf8;
+        --text-main: #f8fafc;
+        --text-muted: #94a3b8;
+        --clutch-color: #f43f5e;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-main);
+        margin: 0;
+        padding: 2rem;
+      }
+
+      .container {
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+
+      header {
+        text-align: center;
+        margin-bottom: 3rem;
+      }
+
+      h1 {
+        color: var(--accent);
+        margin-bottom: 0.5rem;
+      }
+
+      /* Control Panel Styles */
+      .controls {
+        background-color: var(--card-bg);
+        padding: 2rem;
+        border-radius: 12px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+        margin-bottom: 3rem;
+        border: 1px solid #334155;
+      }
+
+      .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      label {
+        font-weight: 600;
+        color: var(--text-muted);
+      }
+
+      input[type="range"] {
+        width: 100%;
+        accent-color: var(--accent);
+      }
+
+      /* Grid Layout for Player Cards */
+      .matrix-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 2rem;
+      }
+
+      /* Gorgeous Player Card Design */
+      .player-card {
+        background-color: var(--card-bg);
+        border-radius: 12px;
+        padding: 1.5rem;
+        border: 1px solid #334155;
+        transition:
+          transform 0.2s,
+          border-color 0.2s;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .player-card:hover {
+        transform: translateY(-4px);
+        border-color: var(--accent);
+      }
+
+      .player-name {
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin: 0 0 0.25rem 0;
+      }
+
+      .match-meta {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        margin-bottom: 1rem;
+      }
+
+      .description {
+        font-style: italic;
+        color: var(--text-main);
+        margin-bottom: 1.5rem;
+        line-height: 1.4;
+      }
+
+      /* Metrics Display */
+      .metrics-badge-container {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+        text-align: center;
+      }
+
+      .badge {
+        background: #0f172a;
+        padding: 0.5rem;
+        border-radius: 6px;
+        border: 1px solid #1e293b;
+      }
+
+      .badge-val {
+        display: block;
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: var(--accent);
+      }
+
+      .badge-val.clutch {
+        color: var(--clutch-color);
+      }
+
+      .badge-lbl {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 0.2rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>World Cup Cross-Era Analytics</h1>
+        <p style="color: var(--text-muted)">
+          Dynamically rendering deep tactical performance metrics
+        </p>
+      </header>
+
+      <div class="controls">
+        <div class="filter-group">
+          <label for="minuteSlider"
+            >Minimum Minute: <span id="minuteVal">0</span>'</label
+          >
+          <input type="range" id="minuteSlider" min="0" max="120" value="0" />
+        </div>
+        <div class="filter-group">
+          <label for="possessionSlider"
+            >Maximum Team Possession:
+            <span id="possessionVal">100</span>%</label
+          >
+          <input
+            type="range"
+            id="possessionSlider"
+            min="10"
+            max="100"
+            value="100"
+          />
+        </div>
+      </div>
+
+      <div id="matrixGrid" class="matrix-grid"></div>
+    </div>
+
+    <script>
+      const minuteSlider = document.getElementById("minuteSlider");
+      const possessionSlider = document.getElementById("possessionSlider");
+      const minuteVal = document.getElementById("minuteVal");
+      const possessionVal = document.getElementById("possessionVal");
+      const matrixGrid = document.getElementById("matrixGrid");
+
+      async function fetchMetrics() {
+        const minMin = minuteSlider.value;
+        const maxPoss = possessionSlider.value;
+
+        // Update labels on screen
+        minuteVal.textContent = minMin;
+        possessionVal.textContent = maxPoss;
+
+        try {
+          // Talk directly to your live FastAPI endpoint
+          const response = await fetch(
+            `/api/compare?min_minute=${minMin}&max_possession=${maxPoss}`,
+          );
+          const data = await response.json();
+
+          renderCards(data.comparison_matrix);
+        } catch (error) {
+          console.error("Error fetching data from API:", error);
+        }
+      }
+
+      function renderCards(matches) {
+        matrixGrid.innerHTML = "";
+
+        if (matches.length === 0) {
+          matrixGrid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted);">No legendary moments match these rigorous filters.</p>`;
+          return;
+        }
+
+        matches.forEach((goal) => {
+          const card = document.createElement("div");
+          card.className = "player-card";
+          card.innerHTML = `
+                <div class="player-name">${goal.player}</div>
+                <div class="match-meta">W.Cup ${goal.year} | Stage: ${goal.stage} vs ${goal.opponent}</div>
+                <div class="description">"${goal.goal_description}"</div>
+                <div class="metrics-badge-container">
+                    <div class="badge">
+                        <span class="badge-val clutch">${goal.calculated_clutch_index}</span>
+                        <span class="badge-lbl">Clutch Ind.</span>
+                    </div>
+                    <div class="badge">
+                        <span class="badge-val">${goal.possession_defiance_score}</span>
+                        <span class="badge-lbl">Defiance</span>
+                    </div>
+                    <div class="badge">
+                        <span class="badge-val" style="color: #10b981;">${goal.overall_masterclass_rating}</span>
+                        <span class="badge-lbl">Masterclass</span>
+                    </div>
+                </div>
+            `;
+          matrixGrid.appendChild(card);
+        });
+      }
+
+      // Attach event listeners so the UI updates instantly while sliding
+      minuteSlider.addEventListener("input", fetchMetrics);
+      possessionSlider.addEventListener("input", fetchMetrics);
+
+      // Initial load on page startup
+      fetchMetrics();
+    </script>
+  </body>
+</html>
