@@ -1,11 +1,13 @@
 from fastapi import FastAPI, Query
+from fastapi.responses import HTMLResponse  
 from typing import Optional
 import json
 import os
 
-app = FastAPI(title="Atlas Lions & Cross-Era World Cup Engine")
+# Updated to a global title without special characters to keep the deployment safe
+app = FastAPI(title="Cross-Era World Cup Statistics Engine")
 
-# Path to our JSON dataset inside the container
+# Path to your JSON dataset inside the container
 DATA_FILE = "data/worldcup_goals.json"
 
 def init_database():
@@ -18,41 +20,38 @@ def init_database():
 # Load the data once when the server boots up
 all_goals = init_database()
 
-@app.get("/")
+# The root endpoint that keeps the container awake
+@app.get("/", response_class=HTMLResponse)
 def home():
-    return {
-        "message": "Welcome to the Moroccan Milestone & Cross-Era Analytics Engine!",
-        "status": "Online",
-        "docs_url": "/docs"
-    }
-
-@app.get("/api/compare")
-def compare_goals(
-    min_minute: Optional[int] = Query(0, description="Filter goals scored after this minute"),
-    max_possession: Optional[float] = Query(100.0, description="Filter by maximum team possession")
-):
-    filtered_results = []
-    
-    for goal in all_goals:
-        if goal["minute"] >= min_minute and goal["team_possession_pct"] <= max_possession:
-            # Calculate metrics
-            clutch_index = round((goal["minute"] / 90) * (5 / goal["era_avg_goals_per_game"]), 2)
-            possession_defiance = round((100 - goal["team_possession_pct"]) / 10, 2)
-            overall_masterclass = round((clutch_index + possession_defiance) / 2, 2)
-            
-            # Build the clean response record
-            enhanced_goal = goal.copy()
-            enhanced_goal["calculated_clutch_index"] = clutch_index
-            enhanced_goal["possession_defiance_score"] = possession_defiance
-            enhanced_goal["overall_masterclass_rating"] = overall_masterclass
-            
-            filtered_results.append(enhanced_goal)
-            
-    return {
-        "filters_applied": {
-            "min_minute": min_minute,
-            "max_possession_allowed": max_possession
-        },
-        "total_matches_found": len(filtered_results),
-        "comparison_matrix": filtered_results
-    }
+    return """
+    <html>
+        <head>
+            <title>World Cup API</title>
+            <style>
+                body { 
+                    font-family: Arial, sans-serif; 
+                    text-align: center; 
+                    padding-top: 50px; 
+                    background-color: #f4f4f9;
+                    color: #333;
+                }
+                .container {
+                    background: white;
+                    max-width: 600px;
+                    margin: 0 auto;
+                    padding: 40px;
+                    border-radius: 10px;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                }
+                h1 { color: #2c3e50; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>🏆 Global World Cup Statistics Engine</h1>
+                <p>The container is successfully awake and running!</p>
+                <p>Append <code>/docs</code> to the URL to view the interactive API documentation.</p>
+            </div>
+        </body>
+    </html>
+    """
